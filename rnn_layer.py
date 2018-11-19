@@ -10,9 +10,7 @@ class RNN(tf.keras.layers.Layer):
         self.output_size = output_size
 
     def build(self, input_shape):
-        print_op = tf.Print(input_shape, [input_shape])
-        with tf.control_dependencies([print_op]):
-            self.w_xh = self.add_variable('w_xh', shape=[input_shape[-1].value, self.hidden_size])
+        self.w_xh = self.add_variable('w_xh', shape=[input_shape[-1].value, self.hidden_size])
         self.w_hh = self.add_variable('w_hh', shape=[self.hidden_size, self.hidden_size])
         self.b_h = self.add_variable('b_h', shape=[self.hidden_size]) #todo: biases aren't starting in 0.
         self.w_hy = self.add_variable('w_hy', shape=[self.hidden_size, self.output_size])
