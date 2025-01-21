@@ -1,2 +1,2 @@
-# ntm
-Implementation of a Neural Turing Machine. (Note: the training isn't completely stable yet.)
+# Implementation of the Neural Turing Machine
+Implementation of a [Neural Turing Machine](https://arxiv.org/abs/1410.5401)
