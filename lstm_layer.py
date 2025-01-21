@@ -12,7 +12,7 @@ class LSTM(tf.keras.layers.Layer):
     def build(self, input_shape):
         h_size, x_size = self.hidden_size, input_shape[-1].value
         self.wh = self.add_variable('wh', shape=[x_size + h_size, 4 * h_size])
-        self.bh = self.add_variable('bh', shape=[4 * h_size]) #todo: biases aren't starting in 0.
+        self.bh = self.add_variable('bh', shape=[4 * h_size])
         self.wy = self.add_variable('wy', shape=[h_size, self.output_size])
         self.by = self.add_variable('by', shape=[self.output_size])
 
@@ -31,12 +31,12 @@ class LSTM(tf.keras.layers.Layer):
         h = tf.tanh(c) * o
 
         #output
-        output = tf.matmul(h, self.wy) + self.by #todo: there is no act fun here. is that good?
+        output = tf.matmul(h, self.wy) + self.by
         self.h = tf.concat(([h], [c]), 0)
         return output
 
+# uncomment the following for a test example of the LSTM network
 '''
-#Test example:
 x = tf.placeholder(tf.float32, shape=(4, 2))
 y = tf.placeholder(tf.float32, shape=(4, 5))
 rnn = LSTM(tf.zeros([2, 4, 3]), 5)
