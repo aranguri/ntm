@@ -16,11 +16,6 @@ input_length = output_length = bits_length * 2
 output_size = input_size = 4
 h_size = 30
 
-#next step (@santi): we need to continue debugging. the actual thing is that the memory gets nan values. oh, I
-# could read the paper to understand why the NaN appeared. I could build a LSTM to test the performance
-# however, probably there are some bugs, because I didn't debug enough. besides trying to remove errors, it could be good
-# to just look at the code and see if it makes sense. I could also read the paper where they implement the NTM
-
 x = tf.placeholder(tf.float32, shape=(batch_size, input_length, input_size))
 y = tf.placeholder(tf.float32, shape=(batch_size, output_length, output_size))
 initial_memories = tf.Variable(tf.constant(1e-6, shape=(1, batch_size, memory_length, memory_size)))
@@ -41,12 +36,11 @@ def io_head(interface, memory, w_prev):
     memory = tf.reshape(memory, (memory_length, batch_size, memory_size))
 
     #shift, gate, b, sharpener
-
     def similarity(vec):
         return tf.reduce_sum(vec * key, axis=1) / (tf.norm(vec) * tf.norm(key))
 
     def convolve(i):
-        shift_matrix = tf.manip.roll(tf.reverse(shift, axis=(1,)), shift=((i+1) % memory_length), axis=1)#this shift is prone to bugs :D
+        shift_matrix = tf.manip.roll(tf.reverse(shift, axis=(1,)), shift=((i+1) % memory_length), axis=1)
         return tf.reduce_sum(w_g * shift_matrix, axis=1)
 
     #content based weight mixed with previous weight
@@ -95,12 +89,11 @@ def body(output, memories, r, controller_hs, w_prevs):
     memory = memory * (1 - w_write * erase) + w_write * write
     memory = tf.reshape(memory, (1, batch_size, memory_length, memory_size))
     memories = tf.concat((memories, memory), axis=0)
-
-    # with tf.control_dependencies([print_op]):
     w_prevs = tf.reshape(tf.concat((w_read, w_write), axis=0), (2, batch_size, memory_length))
+    
     return new_output, memories, r, controller.h, w_prevs
 
-#is there a better way of doing this?
+#TODO: implement this in a better way
 shapes = [tf.TensorShape([batch_size, None, output_size]), tf.TensorShape([None, batch_size, memory_length, memory_size]),
           tf.TensorShape([batch_size, memory_size]), tf.TensorShape([2, batch_size, h_size]), tf.TensorShape([2, batch_size, memory_length])]
 last_state = tf.while_loop(cond, body, [tf.constant(0.0, shape=(batch_size, 0, output_size)), initial_memories, tf.constant(0.0, shape=(batch_size, memory_size)), controller.h, tf.constant(0.0, shape=(2, batch_size, memory_length))], shape_invariants=[*shapes])
@@ -123,74 +116,20 @@ with tf.Session() as sess:
     train_writer = tf.summary.FileWriter('./logs/9/train ', sess.graph)
 
     for i in itertools.count():
-        bits = np.random.randint(0, 2, size=(batch_size, bits_length, input_size))#we could vary input_size
+        bits = np.random.randint(0, 2, size=(batch_size, bits_length, input_size)) #we could vary input_size
         xs = np.concatenate((bits, np.zeros_like(bits)), axis=1)
         ys = np.concatenate((np.zeros_like(bits), bits), axis=1)
         tr_loss[i], _, output_, memories_, tr_acc[i] = sess.run([loss, minimize, errors, memories, accuracy], feed_dict={x: xs, y: ys})
         print(i)
-        # print('Loss', tr_loss[i])
-            #print(f'{i} loss {np.mean([tr_loss[len(tr_loss) - j] for j in range(1, 100)])}')
-        # print(memories_[-1][0][0])
-        # if i % 190 == 1:
-            # pass
-            # print(memories_[-1][0][0])
-            #print(output_[0, 8:])
-            #print(ys[0, 8:])
-            # print()
+        print('Loss', tr_loss[i])
+        
+        if i % 100 == 0:
+            print(output_[0, 8:])
+            print(ys[0, 8:])
+            
             #dump to tensorboard
-            # merge = tf.summary.merge_all()
-            # summary = sess.run([merge], feed_dict={x: xs, y: ys})
-            # train_writer.add_summary(summary[0], i)
-            # plot(tr_acc)
-
-'''
-#NTM things
-shift s could be smaller
-
-#things
-it's weird that it always arrived to selecting the same memory slot with same attention... maybe something persists over time
-So the memory storage is very similar for two different runnings with different inputs.
-also, what's the size of selected_memory. shouldn't I be merging all memories into one vectorcñio?
-think about the gate. is there an advantage of having dimensionality memory_size?
-what could be failing? refer to the drawing
-
-# Next steps
-* enable memories larger than only one real number (ie, increment input_size, output_size, memory_size)
-* other task: send n real numbers, then send noise, and then ask for the n inputs.
-* is it good to let the neural net use distributed representation for memories? or is it better to apply a sharp softargmax that forces the nn to modify only so many memory slots at a time.
-* how does the performance difference between rnn w memory and rnn wo memory change as we vary the input_length?
-* Do we want to backpropagate through the memory? Is it better to have a fixed initial memory or the optimal one selected by the nn?
-* rnn_im could also receive the memory as input
-* add multiple read/write in one iteration if nn wishes to do so
-* why aren't relu units used for lstm nets?
-
-# Debugging
-print('')
-plt.ion()
-plt.cla()
-plt.imshow(memories_[:-1, 0, :])
-plt.pause(1e-8)
-
-# Story
-
-# Others
-print_op = tf.Print([memory, memory_gate], [memory[0], memory_gate[0]])
-with tf.control_dependencies([print_op]):
-    new_output = tf.identity(new_output)
-
-# benchmarks
-(@2500)
-With memory
-.13
-
-Without memory
-.17
-.08
-.08
-
-> 0.05
-
-#quotes
-'espero no estar haciendo todo mal' (tampoco en la vida)
-'tensorflow: el arte de hacer que las shapes coincidan'
-'''
+            merge = tf.summary.merge_all()
+            summary = sess.run([merge], feed_dict={x: xs, y: ys})
+            train_writer.add_summary(summary[0], i)
+            
+            plot(tr_acc)
