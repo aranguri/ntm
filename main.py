@@ -11,7 +11,7 @@ beta2 = 0.999
 batch_size = 32
 memory_length = 32
 memory_size = 8
-bits_length = 8 #copy task: length of the array the nn has to remember
+bits_length = 8
 input_length = output_length = bits_length * 2
 output_size = input_size = 4
 h_size = 30
@@ -19,7 +19,7 @@ h_size = 30
 x = tf.placeholder(tf.float32, shape=(batch_size, input_length, input_size))
 y = tf.placeholder(tf.float32, shape=(batch_size, output_length, output_size))
 initial_memories = tf.Variable(tf.constant(1e-6, shape=(1, batch_size, memory_length, memory_size)))
-initial_memories = tf.stop_gradient(initial_memories) #A1evoid backprop on initial memory
+initial_memories = tf.stop_gradient(initial_memories) #avoid backprop on initial memory
 
 interface_size = memory_size + memory_length + 3
 ctrl_out_size = 2 * interface_size + 2 * memory_size + output_size
