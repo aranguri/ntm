@@ -12,7 +12,7 @@ class RNN(tf.keras.layers.Layer):
     def build(self, input_shape):
         self.w_xh = self.add_variable('w_xh', shape=[input_shape[-1].value, self.hidden_size])
         self.w_hh = self.add_variable('w_hh', shape=[self.hidden_size, self.hidden_size])
-        self.b_h = self.add_variable('b_h', shape=[self.hidden_size]) #todo: biases aren't starting in 0.
+        self.b_h = self.add_variable('b_h', shape=[self.hidden_size])
         self.w_hy = self.add_variable('w_hy', shape=[self.hidden_size, self.output_size])
         self.b_y = self.add_variable('b_y', shape=[self.output_size])
 
@@ -20,9 +20,8 @@ class RNN(tf.keras.layers.Layer):
         self.h = tf.nn.tanh(tf.matmul(input, self.w_xh) + tf.matmul(self.h, self.w_hh) + self.b_h)
         return tf.matmul(self.h, self.w_hy) + self.b_y #We could add a tf.nn.tanh() here
 
+# uncomment the following for a test example of the RNN network
 '''
-#Test example:
-
 x = tf.placeholder(tf.float32, shape=(4, 2))
 y = tf.placeholder(tf.float32, shape=(4, 5))
 rnn = RNN(tf.zeros([4, 3]), 5)
